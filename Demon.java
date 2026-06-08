@@ -53,15 +53,15 @@ public class Demon
     public double speed()
     {
         if (type == PHOTO_BOSS) {
-            return alert ? 0.052 : 0.026;
+            return alert ? 0.040 : 0.020;
         }
         if (type == WRAITH) {
-            return alert ? 0.034 : 0.015;
+            return alert ? 0.025 : 0.015;
         }
         if (type == BRUTE) {
-            return alert ? 0.020 : 0.010;
+            return alert ? 0.020 : 0.020;
         }
-        return alert ? 0.030 : 0.013;
+        return alert ? 0.030 : 0.030;
     }
 
     public double radius()
