@@ -8,13 +8,14 @@ public class MenuWorld extends World
     private static final int SCREEN_H = 700;
     private static final int SCREEN_W = 1400;
     private static final int ITEM_CONTINUE = 0;
-    private static final int ITEM_VOLUME = 1;
-    private static final int ITEM_EXIT = 2;
+    private static final int ITEM_NEW_GAME = 1;
+    private static final int ITEM_VOLUME = 2;
+    private static final int ITEM_EXIT = 3;
     // Переменные для хранения настроек меню (например, громкость звука или сложность)
     public int soundVolume = 80; 
 
     // Элементы интерфейса
-    private String[] menuItems = {"ПРОДОЛЖИТЬ ИГРУ", "ГРОМКОСТЬ: ", "ВЫХОД В ОС"};
+    private String[] menuItems = {"ПРОДОЛЖИТЬ ИГРУ", "НАЧАТЬ СНАЧАЛА", "ГРОМКОСТЬ: ", "ОСТАНОВИТЬ СКРИПТ"};
     private int selectedIndex = 0; // Какая кнопка выбрана стрелочками
     
     private int glitchTimer = 0; // Эффект мерцания для хоррор-атмосферы
@@ -72,9 +73,21 @@ public class MenuWorld extends World
             gameWorld.ResumeMusic();
             Greenfoot.setWorld(gameWorld);
         }
+        else if (selectedIndex == ITEM_NEW_GAME) { // Полная перезагрузка игры
+            startNewGame();
+        }
         else if (selectedIndex == ITEM_EXIT) { // Выход из игры
             Greenfoot.stop();
         }
+    }
+
+    private void startNewGame()
+    {
+        if (gameWorld != null) {
+            gameWorld.resetForNewGame();
+        }
+        gameWorld = new ForestHorrorWorld(this, SCREEN_W, SCREEN_H);
+        Greenfoot.setWorld(gameWorld);
     }
 
     private boolean isUpKey(String key)
@@ -129,11 +142,6 @@ public class MenuWorld extends World
         bg.setColor(new Color(220, 220, 220));
         bg.drawString("FOREST HORROR", 468, 180);
 
-        // Маленький подзаголовок
-        bg.setFont(new Font("Courier New", false, true, 18));
-        bg.setColor(new Color(100, 100, 110));
-        bg.drawString("Атмосферный 3D кошмар", 545, 215);
-
         // 3. Отрисовка ПУНКТОВ МЕНЮ
         Font itemFont = new Font("Dialog", true, false, 26);
         bg.setFont(itemFont);
@@ -146,7 +154,7 @@ public class MenuWorld extends World
             String text = menuItems[i];
 
             // Модифицируем текст для вывода текущих настроек
-            if (i == 1) text += soundVolume + "%";
+            if (i == ITEM_VOLUME) text += soundVolume + "%";
 
             if (i == selectedIndex) {
                 // Стиль для ВЫБРАННОГО пункта меню
@@ -169,8 +177,9 @@ public class MenuWorld extends World
         // 4. Панель подсказок внизу экрана
         bg.setFont(new Font("Courier New", false, false, 16));
         bg.setColor(new Color(70, 70, 80));
-        bg.drawString("Управление: [W/S] или [Стрелочки] - выбор | [A/D] - изменение настроек | [ENTER/SPACE] - подтверждение", 160, 640);
-        bg.drawString("Во время игры нажмите [ESC], чтобы вернуться сюда", 445, 665);
+        bg.drawString("Управление: [W/S] или [Стрелочки] - выбор | [A/D] - изменение настроек | [ENTER/SPACE] - подтверждение", 160, 615);
+        bg.drawString("Во время игры нажмите [ESC], чтобы вернуться сюда", 445, 640);
+        bg.drawString("Ваша цель собрать все предметы и открыть дверь!", 455, 665);
     }
 
     public void act()

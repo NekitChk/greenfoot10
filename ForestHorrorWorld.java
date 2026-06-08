@@ -167,6 +167,13 @@ public class ForestHorrorWorld extends World
         isGameActive = false;
         PauseMusic();
     }
+
+    public void resetForNewGame()
+    {
+        restart();
+        isGameActive = false;
+    }
+
     private void restart()
     {
         stopBossMusic();
@@ -1644,21 +1651,16 @@ public class ForestHorrorWorld extends World
         frame.drawLine(0, SCREEN_H - 41, SCREEN_W, SCREEN_H - 41);
 
         drawBar(18, SCREEN_H - 28, 118, 10, player.health, 100, new Color(183, 38, 50));
-        drawBar(158, SCREEN_H - 28, 104, 10, player.nerve, 100, new Color(67, 183, 158));
-        drawBar(284, SCREEN_H - 28, 92, 10, player.ammo, 48, new Color(204, 149, 55));
+        drawBar(158, SCREEN_H - 28, 92, 10, player.ammo, 48, new Color(204, 149, 55));
 
         frame.setColor(new Color(220, 224, 214));
         frame.drawString("HP " + player.health, 18, SCREEN_H - 10);
-        frame.drawString("NERVE " + player.nerve, 158, SCREEN_H - 10);
-        frame.drawString("AMMO " + player.ammo, 284, SCREEN_H - 10);
-        frame.drawString("DEMONS " + kills + "/" + totalDemons, 420, SCREEN_H - 10);
+        frame.drawString("AMMO " + player.ammo, 158, SCREEN_H - 10);
+        frame.drawString("ENEMIES " + kills + "/" + totalDemons, 284, SCREEN_H - 10);
 
         if (isGateOpen()) {
             frame.setColor(new Color(79, 238, 158));
             frame.drawString("DOOR OPEN", 604, SCREEN_H - 10);
-        } else {
-            frame.setColor(new Color(155, 168, 158));
-            frame.drawString("COLLECT " + collectedCollectables() + "/" + totalCollectables(), 604, SCREEN_H - 10);
         }
 
         int cx = SCREEN_W / 2;
