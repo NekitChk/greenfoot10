@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.Random;
 
 import java.awt.Robot;
+import java.io.Console;
 
 public class ForestHorrorWorld extends World
 {
@@ -23,6 +24,8 @@ public class ForestHorrorWorld extends World
     private static final String BOSS_IMAGE_FILE = "1.jpg"; //boss moving closer ambient
     private static final String BOSS_MUSIC_FILE = "audio/mob2.mp3";
     private static final double BOSS_MUSIC_RANGE = 15.5;
+    private static final String BACKGROUND_MUSIC = "audio/KitchenAce.mp3";
+    private static final String FIRING_MUSIC = "audio/ShotGunFiring.mp3";
     private static final int DOOR_TEXTURE_SIZE = 96;
     private static final String[] KEY_FORWARD = {"w", "ц"};
     private static final String[] KEY_BACKWARD = {"s", "ы"};
@@ -43,6 +46,8 @@ public class ForestHorrorWorld extends World
     private GreenfootImage bossScreamerFace;
     private GreenfootImage doorTexture;
     private GreenfootSound bossMusic;
+    private GreenfootSound backgroundMusic;
+    private GreenfootSound shotgunFiring;
     private MenuWorld menu;
     private final double[] zBuffer = new double[SCREEN_W]; // needs to be updated every frame for sprites
     private final Random random = new Random(7331);
@@ -90,7 +95,9 @@ public class ForestHorrorWorld extends World
     public void act()
     {
         if (Greenfoot.isKeyDown("escape"))
-        {   
+        {
+            stopBossMusic();
+            PauseMusic();
             Greenfoot.setWorld(this.menu); 
         }
         // Если игра запущена, принудительно убираем мышь в левый верхний угол экрана (0, 0)
@@ -101,6 +108,7 @@ public class ForestHorrorWorld extends World
         //global reset key
         if (dead || won){
             isGameActive = false;
+            PauseMusic();
         }
         if ((dead || won) && isAnyKeyDown(KEY_RESTART)) {
             restart();
@@ -151,11 +159,13 @@ public class ForestHorrorWorld extends World
     // Этот метод запускается, когда нажимается кнопка RUN
     public void started() {
         isGameActive = true;
+        StartMusic();
     }
 
     // Этот метод запускается, когда нажимается кнопка PAUSE
     public void stopped() {
         isGameActive = false;
+        PauseMusic();
     }
     private void restart()
     {
@@ -169,6 +179,8 @@ public class ForestHorrorWorld extends World
         frame = new GreenfootImage(SCREEN_W, SCREEN_H);
         loadBossAssets();
         loadDoorTexture();
+        LoadMusic();
+        StartMusic();
 
         tick = 0;
         kills = 0;
@@ -216,6 +228,37 @@ public class ForestHorrorWorld extends World
         } catch (Throwable ex) {
             bossMusic = null;
         }
+    }
+
+    private void LoadMusic(){
+        try{
+            backgroundMusic = new GreenfootSound(BACKGROUND_MUSIC);
+            backgroundMusic.setVolume(menu.soundVolume);
+        }
+        catch(Exception e){
+            e.notify();
+        }
+        try{
+            shotgunFiring = new GreenfootSound(FIRING_MUSIC);
+            backgroundMusic.setVolume(menu.soundVolume);
+        }
+        catch(Exception e){
+            e.notify();
+        }
+    }
+    
+    public void StartMusic(){
+        backgroundMusic.playLoop();
+    }
+
+    public void PauseMusic(){;
+        backgroundMusic.pause();
+        shotgunFiring.pause();
+    }
+
+    public void ResumeMusic(){
+        backgroundMusic.setVolume(menu.soundVolume);
+        backgroundMusic.playLoop();
     }
 
     private void loadDoorTexture()
@@ -699,7 +742,7 @@ public class ForestHorrorWorld extends World
             fearPulse = Math.max(fearPulse, 9);
             return;
         }
-
+        shotgunFiring.stop();
         player.ammo--;
         alertDemonsFromNoise(7.5);
         Demon best = null;
@@ -709,7 +752,6 @@ public class ForestHorrorWorld extends World
             if (!demon.isAlive()) {
                 continue;
             }
-
             double dx = demon.x - player.x;
             double dy = demon.y - player.y;
             double distance = Math.sqrt(dx * dx + dy * dy);
@@ -721,7 +763,7 @@ public class ForestHorrorWorld extends World
                 bestDistance = distance;
             }
         }
-
+        shotgunFiring.play();
         if (best != null) {
             int damage = best.scoreDamage(50);
             best.health -= damage;
@@ -901,7 +943,8 @@ public class ForestHorrorWorld extends World
             } else if (bossMusicVolume > targetVolume) {
                 bossMusicVolume = Math.max(targetVolume, bossMusicVolume - 6);
             }
-            bossMusic.setVolume(bossMusicVolume);
+            bossMusic.setVolume((int)(bossMusicVolume*((double)menu.soundVolume/100)));
+            bossMusic.wait(1);
         } catch (Throwable ex) {
             bossMusic = null;
         }

@@ -11,7 +11,7 @@ public class MenuWorld extends World
     private static final int ITEM_VOLUME = 1;
     private static final int ITEM_EXIT = 2;
     // Переменные для хранения настроек меню (например, громкость звука или сложность)
-    private int soundVolume = 80; 
+    public int soundVolume = 80; 
 
     // Элементы интерфейса
     private String[] menuItems = {"ПРОДОЛЖИТЬ ИГРУ", "ГРОМКОСТЬ: ", "ВЫХОД В ОС"};
@@ -69,6 +69,7 @@ public class MenuWorld extends World
             if (gameWorld == null) {
                 gameWorld = new ForestHorrorWorld(this, SCREEN_W, SCREEN_H);
             }
+            gameWorld.ResumeMusic();
             Greenfoot.setWorld(gameWorld);
         }
         else if (selectedIndex == ITEM_EXIT) { // Выход из игры
