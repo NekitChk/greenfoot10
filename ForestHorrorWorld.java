@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.Random;
 
 import java.awt.Robot;
+import java.io.Console;
 
 public class ForestHorrorWorld extends World
 {
@@ -23,12 +24,18 @@ public class ForestHorrorWorld extends World
     private static final String BOSS_IMAGE_FILE = "1.jpg"; //boss moving closer ambient
     private static final String BOSS_MUSIC_FILE = "audio/mob2.mp3";
     private static final double BOSS_MUSIC_RANGE = 15.5;
+    private static final String BACKGROUND_MUSIC = "audio/KitchenAce.mp3";
+    private static final String FIRING_MUSIC = "audio/ShotGunFiring.mp3";
     private static final int DOOR_TEXTURE_SIZE = 96;
     private static final String[] KEY_FORWARD = {"w", "ц"};
     private static final String[] KEY_BACKWARD = {"s", "ы"};
     private static final String[] KEY_TURN_LEFT = {"a", "ф"};
     private static final String[] KEY_TURN_RIGHT = {"d", "в"};
     private static final String[] KEY_RESTART = {"r", "к"};
+    private static final int AIR_BUFF= 0;
+    private static final int AMMO_BUFF = 1;
+    private static final int HP_BUFF = 2;
+    private static final int RELIC_BUFF = 3;
 
     private ForestMap forest;
     private HorrorPlayer player;
@@ -39,6 +46,8 @@ public class ForestHorrorWorld extends World
     private GreenfootImage bossScreamerFace;
     private GreenfootImage doorTexture;
     private GreenfootSound bossMusic;
+    private GreenfootSound backgroundMusic;
+    private GreenfootSound shotgunFiring;
     private MenuWorld menu;
     private final double[] zBuffer = new double[SCREEN_W]; // needs to be updated every frame for sprites
     private final Random random = new Random(7331);
@@ -54,6 +63,8 @@ public class ForestHorrorWorld extends World
     private int bossOmenTimer;
     private int bossOmenCooldown;
     private int finalScreamerTimer;
+    private int buffTimer;
+    private int buffCurrent;
     private int finalScreamerLength;
     private int bossMusicVolume;
     private int lastMouseX;
@@ -84,7 +95,9 @@ public class ForestHorrorWorld extends World
     public void act()
     {
         if (Greenfoot.isKeyDown("escape"))
-        {   
+        {
+            stopBossMusic();
+            PauseMusic();
             Greenfoot.setWorld(this.menu); 
         }
         // Если игра запущена, принудительно убираем мышь в левый верхний угол экрана (0, 0)
@@ -95,6 +108,7 @@ public class ForestHorrorWorld extends World
         //global reset key
         if (dead || won){
             isGameActive = false;
+            PauseMusic();
         }
         if ((dead || won) && isAnyKeyDown(KEY_RESTART)) {
             restart();
@@ -106,7 +120,9 @@ public class ForestHorrorWorld extends World
             render();
             return;
         }
-
+        if (buffTimer > 0) {
+            buffTimer--;
+        }
         updateWeather();
         if (!dead && !won) {
             handleInput();
@@ -143,11 +159,13 @@ public class ForestHorrorWorld extends World
     // Этот метод запускается, когда нажимается кнопка RUN
     public void started() {
         isGameActive = true;
+        StartMusic();
     }
 
     // Этот метод запускается, когда нажимается кнопка PAUSE
     public void stopped() {
         isGameActive = false;
+        PauseMusic();
     }
 
     public void resetForNewGame()
@@ -168,12 +186,16 @@ public class ForestHorrorWorld extends World
         frame = new GreenfootImage(SCREEN_W, SCREEN_H);
         loadBossAssets();
         loadDoorTexture();
+        LoadMusic();
+        StartMusic();
 
         tick = 0;
         kills = 0;
         totalDemons = demons.size();
         fireCooldown = 0;
         muzzleTimer = 0;
+        buffTimer = 0;
+        buffCurrent = AIR_BUFF;
         hurtTimer = 0;
         fearPulse = 0;
         lightningTimer = 0;
@@ -213,6 +235,37 @@ public class ForestHorrorWorld extends World
         } catch (Throwable ex) {
             bossMusic = null;
         }
+    }
+
+    private void LoadMusic(){
+        try{
+            backgroundMusic = new GreenfootSound(BACKGROUND_MUSIC);
+            backgroundMusic.setVolume(menu.soundVolume);
+        }
+        catch(Exception e){
+            e.notify();
+        }
+        try{
+            shotgunFiring = new GreenfootSound(FIRING_MUSIC);
+            backgroundMusic.setVolume(menu.soundVolume);
+        }
+        catch(Exception e){
+            e.notify();
+        }
+    }
+    
+    public void StartMusic(){
+        backgroundMusic.playLoop();
+    }
+
+    public void PauseMusic(){;
+        backgroundMusic.pause();
+        shotgunFiring.pause();
+    }
+
+    public void ResumeMusic(){
+        backgroundMusic.setVolume(menu.soundVolume);
+        backgroundMusic.playLoop();
     }
 
     private void loadDoorTexture()
@@ -341,7 +394,6 @@ public class ForestHorrorWorld extends World
             fearPulse = Math.max(fearPulse, 12);
         }
     }
-
 
     //fox logic :)
     private void updateDemons()
@@ -626,23 +678,34 @@ public class ForestHorrorWorld extends World
             }
 
             if (pickup.type == HorrorPickup.AMMO) {
-                player.ammo += 18;
+                player.ammo = Math.min(player.ammo+18, 48);
                 pickup.taken = true;
+                buffCurrent = AMMO_BUFF;
+                activateBuff();
             } else if (pickup.type == HorrorPickup.HEALTH) {
                 // heal + cap at 100. also restores a bit of sanity/nerve
                 player.health = Math.min(100, player.health + 35);
                 player.nerve = Math.min(100, player.nerve + 18);
                 pickup.taken = true;
+                buffCurrent = HP_BUFF;
+                activateBuff();
             } else if (pickup.type == HorrorPickup.RELIC) {
                 player.relics++;
                 player.nerve = Math.min(100, player.nerve + 20);
                 fearPulse = 18; // quick screen shake when grabbing a relic
                 pickup.taken = true;
+                buffCurrent = RELIC_BUFF;
+                activateBuff();
             } else if (pickup.type == HorrorPickup.GATE && isGateOpen()) {
                 // simple win trigger if conditions are met
                 won = true;
             }
         }
+    }
+    //Set timer show buff effect 
+    public void activateBuff()
+    {
+        this.buffTimer = 100;
     }
 
     private void updateNerve()
@@ -686,7 +749,7 @@ public class ForestHorrorWorld extends World
             fearPulse = Math.max(fearPulse, 9);
             return;
         }
-
+        shotgunFiring.stop();
         player.ammo--;
         alertDemonsFromNoise(7.5);
         Demon best = null;
@@ -696,7 +759,6 @@ public class ForestHorrorWorld extends World
             if (!demon.isAlive()) {
                 continue;
             }
-
             double dx = demon.x - player.x;
             double dy = demon.y - player.y;
             double distance = Math.sqrt(dx * dx + dy * dy);
@@ -708,7 +770,7 @@ public class ForestHorrorWorld extends World
                 bestDistance = distance;
             }
         }
-
+        shotgunFiring.play();
         if (best != null) {
             int damage = best.scoreDamage(50);
             best.health -= damage;
@@ -888,7 +950,8 @@ public class ForestHorrorWorld extends World
             } else if (bossMusicVolume > targetVolume) {
                 bossMusicVolume = Math.max(targetVolume, bossMusicVolume - 6);
             }
-            bossMusic.setVolume(bossMusicVolume);
+            bossMusic.setVolume((int)(bossMusicVolume*((double)menu.soundVolume/100)));
+            bossMusic.wait(1);
         } catch (Throwable ex) {
             bossMusic = null;
         }
@@ -926,8 +989,10 @@ public class ForestHorrorWorld extends World
         drawHud();
         drawMiniMap();
 
-        //Draw oval of the flashlight
-        //drawVignette();
+        // Отрисовка рамки бафа, если таймер активен
+        if (buffTimer > 0) {
+            drawBuffBorder();
+        }
 
         if (hurtTimer > 0 || fearPulse > 0) {
             drawFearOverlay();
@@ -1605,6 +1670,72 @@ public class ForestHorrorWorld extends World
         frame.drawLine(cx + 4, cy, cx + 11, cy);
         frame.drawLine(cx, cy - 11, cx, cy - 4);
         frame.drawLine(cx, cy + 4, cx, cy + 11);
+    }
+
+    private void drawBuffBorder()
+    {
+        // 1. Вычисляем прозрачность (макс 140 из 255). 
+        // За 30 тиков до конца эффекта рамка начнет плавно исчезать.
+        int maxAlpha = 20;
+        if (buffTimer < 30) {
+            maxAlpha = (int)(maxAlpha * (buffTimer / 30.0));
+        }
+        
+        // 2. Получаем Graphics2D для рисования поверх игрового кадра
+        java.awt.Graphics2D g2d = frame.getAwtImage().createGraphics();
+        
+        // Включаем сглаживание углов
+        g2d.setRenderingHint(
+            java.awt.RenderingHints.KEY_ANTIALIASING, 
+            java.awt.RenderingHints.VALUE_ANTIALIAS_ON
+        );
+
+        // 3. Создаем геометрию рамки через класс Area
+        // Сначала создаем прямоугольник размером со весь экран
+        java.awt.geom.Area screenArea = new java.awt.geom.Area(
+            new java.awt.Rectangle(0, 0, SCREEN_W, SCREEN_H)
+        );
+
+        // Настраиваем отступы для овала (чем больше отступ, тем толще рамка по краям)
+        int offsetX = 10; // отступ слева и справа
+        int offsetY = 10; // отступ сверху и снизу
+
+        // Создаем овал, который мы хотим "вырезать" из центра
+        java.awt.geom.Ellipse2D centerEllipse = new java.awt.geom.Ellipse2D.Double(
+            offsetX, 
+            offsetY, 
+            SCREEN_W - (offsetX * 2), 
+            SCREEN_H - (offsetY * 2)
+        );
+        java.awt.geom.Area ellipseArea = new java.awt.geom.Area(centerEllipse);
+
+        // ВЫЧИТАЕМ овал из прямоугольника экрана. Остаются только края!
+        screenArea.subtract(ellipseArea);
+
+        int r=0,g=0, b =0;
+        int lr=0,lg=0,lb=0;
+        if (buffCurrent == AMMO_BUFF){
+            r = 255; g = 210; b=0;
+            lr = 255; lg = 225; lb = 180;
+        }
+        else if (buffCurrent == HP_BUFF){
+            r = 247; g =13; b = 13;
+            lr = 255; g = 12; b =0;
+        }
+        else if (buffCurrent == RELIC_BUFF){
+            r = 0; g = 128; b = 242;
+            lr=2; lg=195; lb=255;
+        }
+        // 4. Закрашиваем получившиеся края желтым цветом
+        g2d.setColor(new java.awt.Color(r, g, b, clampColor(maxAlpha)));
+        g2d.fill(screenArea);
+
+        // 5. Добавляем красивый светящийся контур по границе выреза
+        g2d.setColor(new java.awt.Color(lr, lg, lb, clampColor(maxAlpha / 2)));
+        g2d.setStroke(new java.awt.BasicStroke(4.0f)); // Толщина линии свечения
+        g2d.draw(centerEllipse);
+        
+        g2d.dispose();
     }
 
     private void drawMiniMap()

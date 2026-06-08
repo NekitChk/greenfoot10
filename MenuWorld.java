@@ -12,7 +12,7 @@ public class MenuWorld extends World
     private static final int ITEM_VOLUME = 2;
     private static final int ITEM_EXIT = 3;
     // Переменные для хранения настроек меню (например, громкость звука или сложность)
-    private int soundVolume = 80; 
+    public int soundVolume = 80; 
 
     // Элементы интерфейса
     private String[] menuItems = {"ПРОДОЛЖИТЬ ИГРУ", "НАЧАТЬ СНАЧАЛА", "ГРОМКОСТЬ: ", "ОСТАНОВИТЬ СКРИПТ"};
@@ -70,6 +70,7 @@ public class MenuWorld extends World
             if (gameWorld == null) {
                 gameWorld = new ForestHorrorWorld(this, SCREEN_W, SCREEN_H);
             }
+            gameWorld.ResumeMusic();
             Greenfoot.setWorld(gameWorld);
         }
         else if (selectedIndex == ITEM_NEW_GAME) { // Полная перезагрузка игры
